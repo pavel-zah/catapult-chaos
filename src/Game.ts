@@ -1,5 +1,5 @@
 import Matter from 'matter-js';
-import { Analytics } from './core/Analytics';
+import { Analytics, type LevelOrigin } from './core/Analytics';
 import { AudioEngine } from './core/AudioEngine';
 import { Camera } from './core/Camera';
 import { Engine } from './core/Engine';
@@ -116,14 +116,21 @@ export class Game {
 
   async initialize(): Promise<void> {
     this.progress = await this.storage.load();
+    this.analytics.appOpen(this.progress);
     this.showLevelSelect();
     this.engine.start();
   }
 
-  private startLevel(id: string): void {
+  private startLevel(id: string, from: LevelOrigin = 'menu'): void {
     const level = getLevel(id);
     if (!level) return;
     if (level !== SANDBOX_LEVEL && !isLevelUnlocked(LEVELS, this.progress, level.id)) return;
+    this.analytics.abandon(from === 'restart' ? 'restart' : 'menu', {
+      score: this.score,
+      nowMs: this.engine.timeMs,
+      targetsLeft: this.goals.targetsLeft,
+      goalsLeft: this.goals.goalsLeft,
+    });
     this.currentLevel = level;
     this.levelStartedAt = this.engine.timeMs;
     this.catQueue = [...level.queue];
@@ -144,14 +151,25 @@ export class Game {
     this.camera.setBounds(level.worldBounds.width, level.worldBounds.height);
     this.state.set('AIMING');
     this.hud.showGameplay(level);
-    if (level.sandbox) this.analytics.abandon('menu');
-    else this.analytics.beginLevel(level.id, this.levelStartedAt);
+    if (!level.sandbox) {
+      this.analytics.beginLevel({
+        level: level.id,
+        starsBefore: this.progress.levels[level.id]?.stars ?? 0,
+        catsTotal: level.queue.length,
+        gadgetTypes: [...new Set(level.gadgets.map((gadget) => gadget.type))],
+      }, from, this.levelStartedAt);
+    }
     this.loadNextCat();
     this.updateHud();
   }
 
   private showLevelSelect(): void {
-    this.analytics.abandon('menu');
+    this.analytics.abandon('menu', {
+      score: this.score,
+      nowMs: this.engine.timeMs,
+      targetsLeft: this.goals.targetsLeft,
+      goalsLeft: this.goals.goalsLeft,
+    });
     this.state.set('LEVEL_SELECT');
     this.cameraDragging = false;
     this.hud.showLevelSelect(LEVELS, this.progress, SANDBOX_LEVEL);
@@ -207,6 +225,9 @@ export class Game {
     this.currentTrail = [];
     this.trailTick = 0;
     this.shotResolved = false;
+    if (!this.currentLevel?.sandbox) {
+      this.analytics.beginShot(cat.typeId, this.score, this.engine.timeMs);
+    }
     this.settling.start(this.engine.timeMs);
     this.state.set('FLYING');
     this.events.emit('cat:launched', { body, catType: cat.typeId });
@@ -224,6 +245,7 @@ export class Game {
     if (cat.hasCollided && !definition.allowAbilityAfterCollision) return;
 
     cat.abilityUsed = true;
+    this.analytics.markAbility(this.engine.timeMs, cat.hasCollided);
     cat.emotion = 'ability';
     cat.emotionUntil = this.engine.timeMs + 650;
     cat.abilityEndsAt = 0;
@@ -280,6 +302,7 @@ export class Game {
       this.activeCatIds.add(body.id);
       if (index === 0) this.activePrimaryId = body.id;
     }
+    this.analytics.markKittens(count);
     original.game.destroyed = true;
     this.physics.remove(original);
     this.cats.delete(original.id);
@@ -333,6 +356,7 @@ export class Game {
   private finishShot(): void {
     if (this.shotResolved) return;
     this.shotResolved = true;
+    if (!this.currentLevel?.sandbox) this.analytics.endShot(this.score);
     if (this.currentLevel?.sandbox) {
       this.removeActiveCats();
       if (this.catQueue.length === 0) this.catQueue = [...this.currentLevel.queue];
@@ -357,7 +381,13 @@ export class Game {
     const stars = this.goals.stars(this.score);
     this.state.set('WON');
     this.settling.stop();
-    this.analytics.winLevel(stars, this.score, this.engine.timeMs);
+    this.analytics.winLevel(
+      stars,
+      this.score,
+      this.engine.timeMs,
+      this.catQueue.length,
+      this.goals.hasBonusFish,
+    );
     this.events.emit('audio:play', { sound: 'win' });
     const center = this.currentLevel.slingshot;
     for (let burst = 0; burst < 5; burst += 1) {
@@ -378,7 +408,16 @@ export class Game {
     if (!this.currentLevel || ['LOST', 'WON'].includes(this.state.state)) return;
     this.state.set('LOST');
     this.settling.stop();
-    this.analytics.failLevel(this.goals.hasFailed ? 'treasure_lost' : 'out_of_cats', this.engine.timeMs);
+    this.analytics.failLevel(
+      this.goals.hasFailed ? 'treasure_lost' : 'out_of_cats',
+      this.score,
+      this.engine.timeMs,
+      {
+        targetsLeft: this.goals.targetsLeft,
+        goalsLeft: this.goals.goalsLeft,
+        unusedCats: this.catQueue.length,
+      },
+    );
     this.events.emit('audio:play', { sound: 'lose' });
     this.hud.showResult(false, 0, this.score, false, false);
   }
@@ -411,11 +450,13 @@ export class Game {
     });
     this.events.on('gadget:bonus', ({ position }) => {
       this.score += 300;
+      this.analytics.markGadgetUsed('bonus_fish');
       this.particles.burst(position, '#fde047', 32, 11, 8);
       this.updateHud();
     });
     this.events.on('gadget:goal', ({ gadgetId }) => {
       this.score += 1000;
+      this.analytics.markGadgetUsed('goal_zone');
       const gadget = this.loadedLevel?.gadgets.get(gadgetId);
       if (gadget?.bodies[0]) this.particles.burst(gadget.bodies[0].position, '#86efac', 40, 12, 8);
       this.updateHud();
@@ -446,6 +487,8 @@ export class Game {
   private onCollision(a: GameBody, b: GameBody, impulse: number): void {
     this.dispatchGadgetCollision(a, b, true, impulse);
     this.dispatchGadgetCollision(b, a, true, impulse);
+    this.trackGadgetUsage(a, b);
+    this.trackGadgetUsage(b, a);
     if (!this.state.isPlaying) return;
 
     this.markCatImpact(a, b);
@@ -479,10 +522,18 @@ export class Game {
     else gadget.onCollisionEnd?.(other, this.engine.timeMs);
   }
 
+  /** Факт взаимодействия активного кота с механикой: только 0/1, без счётчиков. */
+  private trackGadgetUsage(body: GameBody, other: GameBody): void {
+    if (other.game.kind !== 'gadget') return;
+    if (!this.activeCatIds.has(body.id)) return;
+    this.analytics.markGadgetUsed(other.game.typeId);
+  }
+
   private markCatImpact(catBody: GameBody, other: GameBody): void {
     const cat = this.cats.get(catBody.id);
     if (!cat || !this.activeCatIds.has(catBody.id) || other.isSensor) return;
     cat.hasCollided = true;
+    this.analytics.markCollision();
     cat.emotion = 'hit';
     cat.emotionUntil = this.engine.timeMs + 450;
   }
@@ -615,8 +666,8 @@ export class Game {
     void this.audio.unlock();
     if (action !== 'sound') this.audio.play('click');
     switch (action) {
-      case 'level': if (value) this.startLevel(value); break;
-      case 'restart': if (this.currentLevel) this.startLevel(this.currentLevel.id); break;
+      case 'level': if (value) this.startLevel(value, 'menu'); break;
+      case 'restart': if (this.currentLevel) this.startLevel(this.currentLevel.id, 'restart'); break;
       case 'menu': this.showLevelSelect(); break;
       case 'camera': if (this.state.isPlaying) this.camera.toggleOverview(); break;
       case 'sound': this.hud.setMuted(this.audio.toggleMute()); break;
@@ -631,7 +682,7 @@ export class Game {
         break;
       case 'next': {
         const next = this.currentLevel ? getNextLevel(this.currentLevel.id) : undefined;
-        if (next) this.startLevel(next.id);
+        if (next) this.startLevel(next.id, 'next');
         else this.showLevelSelect();
         break;
       }
@@ -641,7 +692,7 @@ export class Game {
   private onKeyDown = (event: KeyboardEvent): void => {
     if (event.repeat) return;
     const key = event.key.toLowerCase();
-    if (key === 'r' && this.currentLevel) this.startLevel(this.currentLevel.id);
+    if (key === 'r' && this.currentLevel) this.startLevel(this.currentLevel.id, 'restart');
     if (key === 'c' && this.state.isPlaying) this.camera.toggleOverview();
     if (key === 'm') this.hud.setMuted(this.audio.toggleMute());
     if (key === 'd') this.debug = !this.debug;

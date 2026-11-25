@@ -1,5 +1,5 @@
 import type { EventBus } from '../core/EventBus';
-import type { LevelData } from '../levels/schema';
+import type { LevelData, LevelGoalConfig } from '../levels/schema';
 
 export class GoalTracker {
   private level: LevelData | null = null;
@@ -45,16 +45,15 @@ export class GoalTracker {
     return this.remainingTargets.size;
   }
 
+  /** Сколько обязательных целей ещё не выполнено; бонусная рыбка не учитывается. */
+  get goalsLeft(): number {
+    if (!this.level) return 0;
+    return this.level.goals.filter((goal) => !this.isGoalDone(goal)).length;
+  }
+
   isWon(): boolean {
     if (!this.level || this.failed) return false;
-    return this.level.goals.every((goal) => {
-      if (goal.type === 'destroy_targets') {
-        if (!goal.targetIds) return this.remainingTargets.size === 0;
-        return goal.targetIds.every((id) => !this.remainingTargets.has(id));
-      }
-      if (goal.type === 'deliver_to_zone') return this.deliveredZones.has(goal.zoneId);
-      return true;
-    });
+    return this.level.goals.every((goal) => this.isGoalDone(goal));
   }
 
   stars(score: number): number {
@@ -62,5 +61,14 @@ export class GoalTracker {
     if (score >= this.level.starThresholds.threeStars) return 3;
     if (score >= this.level.starThresholds.twoStars) return 2;
     return 1;
+  }
+
+  private isGoalDone(goal: LevelGoalConfig): boolean {
+    if (goal.type === 'destroy_targets') {
+      if (!goal.targetIds) return this.remainingTargets.size === 0;
+      return goal.targetIds.every((id) => !this.remainingTargets.has(id));
+    }
+    if (goal.type === 'deliver_to_zone') return this.deliveredZones.has(goal.zoneId);
+    return true;
   }
 }
