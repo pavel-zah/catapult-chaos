@@ -2,7 +2,9 @@ import type { Vector } from 'matter-js';
 import type { Camera } from '../core/Camera';
 import type { ParticleSystem } from '../core/ParticleSystem';
 import type { Slingshot } from '../gameplay/Slingshot';
-import type { LevelData } from '../levels/schema';
+import type { GadgetSpawnConfig, LevelData } from '../levels/schema';
+import type { ChannelSystem } from '../gameplay/ChannelSystem';
+import { channelColor } from '../entities/gadgets/gadgetUtils';
 import type { CatRegistry } from '../entities/CatRegistry';
 import type { BlockRegistry } from '../entities/BlockRegistry';
 import type { CatEntity, GadgetInstance, GameBody } from '../entities/types';
@@ -22,6 +24,8 @@ export interface RenderModel {
   now: number;
   fps: number;
   debug: boolean;
+  channels: ChannelSystem;
+  levelStartedAt: number;
 }
 
 export class Renderer {
@@ -54,6 +58,7 @@ export class Renderer {
     this.camera.apply(ctx);
     this.drawWorldBackground(ctx, model.level);
     this.drawTrails(ctx, model.previousTrails, model.currentTrail);
+    if (model.debug || model.now - model.levelStartedAt < 4000) this.drawChannelLinks(ctx, model);
     for (const gadget of model.gadgets.values()) gadget.render?.({ ctx, now: model.now });
     this.drawSlingshotBack(ctx, model.slingshot);
 
@@ -77,6 +82,37 @@ export class Renderer {
     ctx.restore();
 
     if (model.debug) this.debugRenderer.renderScreen(ctx, this.width, model.fps, model.bodies.length);
+  }
+
+  private drawChannelLinks(ctx: CanvasRenderingContext2D, model: RenderModel): void {
+    const triggers = model.level.gadgets.filter((gadget) => (
+      gadget.type === 'button' || gadget.type === 'pressure_plate'
+    ));
+    const receivers = model.level.gadgets.filter((gadget) => (
+      gadget.type !== 'button' && gadget.type !== 'pressure_plate' && gadgetChannel(gadget)
+    ));
+    ctx.save();
+    ctx.lineWidth = 2;
+    ctx.setLineDash([9, 8]);
+    ctx.lineDashOffset = -model.now * 0.025;
+    ctx.font = '700 13px system-ui';
+    ctx.textAlign = 'center';
+    for (const trigger of triggers) {
+      for (const receiver of receivers) {
+        const channelId = gadgetChannel(receiver);
+        if (!channelId || trigger.channelId !== channelId) continue;
+        const color = channelColor(channelId);
+        ctx.strokeStyle = color;
+        ctx.globalAlpha = model.channels.isActive(channelId) ? 0.9 : 0.48;
+        ctx.beginPath();
+        ctx.moveTo(trigger.x, trigger.y);
+        ctx.lineTo(receiver.x, receiver.y);
+        ctx.stroke();
+        ctx.fillStyle = color;
+        ctx.fillText(channelId, (trigger.x + receiver.x) / 2, (trigger.y + receiver.y) / 2 - 7);
+      }
+    }
+    ctx.restore();
   }
 
   private resize(): void {
@@ -263,4 +299,8 @@ export class Renderer {
     current.forEach((point) => { ctx.beginPath(); ctx.arc(point.x, point.y, 4.5, 0, Math.PI * 2); ctx.fill(); });
     ctx.globalAlpha = 1;
   }
+}
+
+function gadgetChannel(gadget: GadgetSpawnConfig): string | undefined {
+  return 'channelId' in gadget ? gadget.channelId : undefined;
 }

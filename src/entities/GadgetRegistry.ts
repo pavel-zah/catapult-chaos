@@ -3,6 +3,17 @@ import type { GadgetFactoryContext, GadgetInstance } from './types';
 
 export type GadgetFactory = (spawn: GadgetSpawnConfig, context: GadgetFactoryContext) => GadgetInstance;
 
+/** Keeps factories fully typed while the registry stores one common factory signature. */
+export function defineGadgetFactory<T extends GadgetSpawnConfig['type']>(
+  type: T,
+  factory: (spawn: Extract<GadgetSpawnConfig, { type: T }>, context: GadgetFactoryContext) => GadgetInstance,
+): GadgetFactory {
+  return (spawn, context) => {
+    if (spawn.type !== type) throw new Error(`Gadget "${spawn.id}" must have type "${type}".`);
+    return factory(spawn as Extract<GadgetSpawnConfig, { type: T }>, context);
+  };
+}
+
 export class GadgetRegistry {
   private factories = new Map<string, GadgetFactory>();
 

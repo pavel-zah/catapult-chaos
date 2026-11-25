@@ -14,6 +14,9 @@ export interface GameEvents {
   'tnt:exploded': { position: Vector; radius: number };
   'gadget:goal': { gadgetId: string; targetId: string };
   'gadget:bonus': { gadgetId: string; position: Vector };
+  'gadget:laser-hit': { gadgetId: string; body: GameBody; position: Vector; now: number };
+  'gadget:rope-cut': { gadgetId: string; position: Vector };
+  'channel:changed': { channelId: string; sourceId: string; active: boolean };
   'game:score-popup': { position: Vector; text: string; color?: string };
   'game:hitstop': { durationMs: number };
   'game:state': { state: GameState; previous: GameState };

@@ -1,11 +1,11 @@
 import Matter from 'matter-js';
 import { PORTAL_COOLDOWN_MS } from '../../constants';
 import { attachMetadata, type GameBody } from '../types';
-import type { GadgetFactory } from '../GadgetRegistry';
+import { defineGadgetFactory } from '../GadgetRegistry';
 
 const lastTeleport = new WeakMap<GameBody, number>();
 
-export const createPortal: GadgetFactory = (spawn, { physics, events, getGadget }) => {
+export const createPortal = defineGadgetFactory('portal', (spawn, { physics, events, getGadget }) => {
   const width = spawn.width ?? 44;
   const height = spawn.height ?? 140;
   const body = attachMetadata(Matter.Bodies.rectangle(spawn.x, spawn.y, width, height, {
@@ -73,4 +73,4 @@ export const createPortal: GadgetFactory = (spawn, { physics, events, getGadget 
       ctx.restore();
     },
   };
-};
+});

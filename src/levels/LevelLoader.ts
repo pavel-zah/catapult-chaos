@@ -4,6 +4,7 @@ import type { BlockRegistry } from '../entities/BlockRegistry';
 import type { GadgetRegistry } from '../entities/GadgetRegistry';
 import type { EventBus } from '../core/EventBus';
 import type { PhysicsWorld } from '../physics/PhysicsWorld';
+import type { ChannelSystem } from '../gameplay/ChannelSystem';
 import { attachMetadata } from '../entities/types';
 import type { LevelData } from './schema';
 
@@ -41,10 +42,12 @@ export class LevelLoader {
     private readonly events: EventBus,
     private readonly blocks: BlockRegistry,
     private readonly gadgetRegistry: GadgetRegistry,
+    private readonly channels: ChannelSystem,
   ) {}
 
   load(level: LevelData, now: number): LoadedLevel {
     this.physics.clear();
+    this.channels.reset();
     this.physics.setGravity(level.modifiers?.gravityScale ?? 1);
     this.addBoundaries(level);
 
@@ -108,7 +111,9 @@ export class LevelLoader {
       const gadget = this.gadgetRegistry.create(spawn, {
         physics: this.physics,
         events: this.events,
+        channels: this.channels,
         getGadget: (id) => gadgets.get(id),
+        getBody: (entityId) => this.physics.bodies.find((body) => body.game.entityId === entityId),
       });
       gadgets.set(gadget.id, gadget);
     }

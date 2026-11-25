@@ -1,9 +1,9 @@
 import Matter from 'matter-js';
 import { GOAL_HOLD_MS } from '../../constants';
 import { attachMetadata, type GameBody } from '../types';
-import type { GadgetFactory } from '../GadgetRegistry';
+import { defineGadgetFactory } from '../GadgetRegistry';
 
-export const createGoalZone: GadgetFactory = (spawn, { physics, events }) => {
+export const createGoalZone = defineGadgetFactory('goal_zone', (spawn, { physics, events }) => {
   const width = spawn.width ?? 240;
   const height = spawn.height ?? 110;
   const body = attachMetadata(Matter.Bodies.rectangle(spawn.x, spawn.y, width, height, {
@@ -65,4 +65,4 @@ export const createGoalZone: GadgetFactory = (spawn, { physics, events }) => {
       ctx.restore();
     },
   };
-};
+});

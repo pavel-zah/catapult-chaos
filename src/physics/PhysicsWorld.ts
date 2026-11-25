@@ -52,6 +52,14 @@ export class PhysicsWorld {
     Matter.Composite.remove(this.engine.world, body, true);
   }
 
+  addConstraint(constraint: Matter.Constraint): void {
+    Matter.Composite.add(this.engine.world, constraint);
+  }
+
+  removeConstraint(constraint: Matter.Constraint): void {
+    Matter.Composite.remove(this.engine.world, constraint, true);
+  }
+
   clear(): void {
     Matter.Composite.clear(this.engine.world, false, true);
     Matter.Engine.clear(this.engine);

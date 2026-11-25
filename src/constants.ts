@@ -37,3 +37,4 @@ export const JUICE = {
 
 export const PORTAL_COOLDOWN_MS = 250;
 export const GOAL_HOLD_MS = 800;
+export const LASER_TNT_DELAY_MS = 150;

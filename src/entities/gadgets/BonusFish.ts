@@ -1,8 +1,8 @@
 import Matter from 'matter-js';
 import { attachMetadata } from '../types';
-import type { GadgetFactory } from '../GadgetRegistry';
+import { defineGadgetFactory } from '../GadgetRegistry';
 
-export const createBonusFish: GadgetFactory = (spawn, { physics, events }) => {
+export const createBonusFish = defineGadgetFactory('bonus_fish', (spawn, { physics, events }) => {
   const radius = spawn.radius ?? 31;
   const body = attachMetadata(Matter.Bodies.circle(spawn.x, spawn.y, radius, {
     isStatic: true,
@@ -55,4 +55,4 @@ export const createBonusFish: GadgetFactory = (spawn, { physics, events }) => {
       ctx.restore();
     },
   };
-};
+});

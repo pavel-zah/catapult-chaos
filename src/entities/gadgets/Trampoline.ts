@@ -1,8 +1,8 @@
 import Matter from 'matter-js';
 import { attachMetadata } from '../types';
-import type { GadgetFactory } from '../GadgetRegistry';
+import { defineGadgetFactory } from '../GadgetRegistry';
 
-export const createTrampoline: GadgetFactory = (spawn, { physics, events }) => {
+export const createTrampoline = defineGadgetFactory('trampoline', (spawn, { physics, events }) => {
   const width = spawn.width ?? 170;
   const height = spawn.height ?? 26;
   const body = attachMetadata(Matter.Bodies.rectangle(spawn.x, spawn.y, width, height, {
@@ -61,4 +61,4 @@ export const createTrampoline: GadgetFactory = (spawn, { physics, events }) => {
       ctx.restore();
     },
   };
-};
+});

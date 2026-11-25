@@ -148,6 +148,7 @@ h2 { margin: 8px 0 14px; font-size: clamp(29px, 4vw, 42px); }
 .primary-button { border: 0; color: #29200c; background: #facc15; box-shadow: 0 5px 0 #a16207; }
 .primary-button:hover { background: #fde047; }
 .secondary-button { border: 1px solid #ffffff26; color: #f8fafc; background: #ffffff0b; }
+.sandbox-button { max-width: 420px; margin: 18px auto 0; border-color: #67e8f955; color: #a5f3fc; }
 .text-button { border: 0; color: #94a3b8; background: transparent; }
 .result-stars { color: #facc15; font-size: 54px; letter-spacing: 7px; text-shadow: 0 5px 20px #facc1544; }
 .result-cat { color: #fda4af; font-size: 50px; font-weight: 900; }

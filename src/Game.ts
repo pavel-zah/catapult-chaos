@@ -2,7 +2,7 @@ import Matter from 'matter-js';
 import { AudioEngine } from './core/AudioEngine';
 import { Camera } from './core/Camera';
 import { Engine } from './core/Engine';
-import { EventBus } from './core/EventBus';
+import { EventBus, type GameEvents } from './core/EventBus';
 import { InputManager, type PointerSample } from './core/InputManager';
 import { ParticleSystem } from './core/ParticleSystem';
 import {
@@ -11,7 +11,7 @@ import {
   type GameProgress,
   type IStorageAdapter,
 } from './core/StorageAdapter';
-import { JUICE, PHYSICS } from './constants';
+import { JUICE, LASER_TNT_DELAY_MS, PHYSICS } from './constants';
 import { BlockRegistry } from './entities/BlockRegistry';
 import { CatRegistry } from './entities/CatRegistry';
 import { GadgetRegistry } from './entities/GadgetRegistry';
@@ -25,11 +25,12 @@ import type {
   GameBody,
   ScheduledAction,
 } from './entities/types';
+import { ChannelSystem } from './gameplay/ChannelSystem';
 import { GameStateMachine } from './gameplay/GameStateMachine';
 import { GoalTracker } from './gameplay/GoalTracker';
 import { Slingshot } from './gameplay/Slingshot';
 import { LevelLoader, createCatBody, type LoadedLevel } from './levels/LevelLoader';
-import { LEVELS, getLevel, getNextLevel } from './levels';
+import { LEVELS, SANDBOX_LEVEL, getLevel, getNextLevel } from './levels';
 import type { LevelData } from './levels/schema';
 import { PhysicsWorld } from './physics/PhysicsWorld';
 import { SettlingDetector } from './physics/SettlingDetector';
@@ -45,6 +46,7 @@ export class Game {
   private readonly catRegistry = new CatRegistry();
   private readonly blockRegistry = new BlockRegistry();
   private readonly gadgetRegistry = new GadgetRegistry();
+  private readonly channels = new ChannelSystem(this.events);
   private readonly physics = new PhysicsWorld(this.events);
   private readonly settling = new SettlingDetector();
   private readonly goals = new GoalTracker(this.events);
@@ -53,6 +55,7 @@ export class Game {
     this.events,
     this.blockRegistry,
     this.gadgetRegistry,
+    this.channels,
   );
   private readonly renderer: Renderer;
   private readonly hud: HUD;
@@ -78,6 +81,7 @@ export class Game {
   private cameraDragging = false;
   private shotResolved = false;
   private explosionSequence = 0;
+  private laserPendingTnt = new WeakSet<GameBody>();
   private debug = false;
 
   constructor(
@@ -144,7 +148,7 @@ export class Game {
   private showLevelSelect(): void {
     this.state.set('LEVEL_SELECT');
     this.cameraDragging = false;
-    this.hud.showLevelSelect(LEVELS, this.progress);
+    this.hud.showLevelSelect(LEVELS, this.progress, SANDBOX_LEVEL);
   }
 
   private loadNextCat(): void {
@@ -323,6 +327,12 @@ export class Game {
   private finishShot(): void {
     if (this.shotResolved) return;
     this.shotResolved = true;
+    if (this.currentLevel?.sandbox) {
+      this.removeActiveCats();
+      if (this.catQueue.length === 0) this.catQueue = [...this.currentLevel.queue];
+      this.loadNextCat();
+      return;
+    }
     if (this.goals.isWon()) {
       this.winLevel();
       return;
@@ -386,6 +396,11 @@ export class Game {
       this.dispatchGadgetCollision(a, b, false);
       this.dispatchGadgetCollision(b, a, false);
     });
+    this.events.on('gadget:laser-hit', (hit) => this.onLaserHit(hit));
+    this.events.on('gadget:rope-cut', ({ position }) => {
+      this.particles.burst(position, '#d6b47c', 14, 5, 5);
+      this.events.emit('audio:play', { sound: 'click' });
+    });
     this.events.on('gadget:bonus', ({ position }) => {
       this.score += 300;
       this.particles.burst(position, '#fde047', 32, 11, 8);
@@ -402,9 +417,27 @@ export class Game {
     });
   }
 
+  private onLaserHit(hit: GameEvents['gadget:laser-hit']): void {
+    const { body, now } = hit;
+    if (body.game.destroyed) return;
+    if (body.game.kind === 'gadget' && body.game.typeId === 'rope') {
+      this.loadedLevel?.gadgets.get(body.game.entityId)?.onLaserHit?.(now);
+      return;
+    }
+    if (body.game.kind === 'target' && body.game.typeId === 'vacuum') {
+      this.destroyBody(body);
+      return;
+    }
+    if (body.game.kind !== 'block' || body.game.typeId !== 'tnt' || this.laserPendingTnt.has(body)) return;
+    this.laserPendingTnt.add(body);
+    this.schedule(LASER_TNT_DELAY_MS, () => {
+      if (!body.game.destroyed) this.destroyBody(body);
+    });
+  }
+
   private onCollision(a: GameBody, b: GameBody, impulse: number): void {
-    this.dispatchGadgetCollision(a, b, true);
-    this.dispatchGadgetCollision(b, a, true);
+    this.dispatchGadgetCollision(a, b, true, impulse);
+    this.dispatchGadgetCollision(b, a, true, impulse);
     if (!this.state.isPlaying) return;
 
     this.markCatImpact(a, b);
@@ -425,11 +458,16 @@ export class Game {
     this.applyImpactDamage(b, impulse);
   }
 
-  private dispatchGadgetCollision(gadgetBody: GameBody, other: GameBody, started: boolean): void {
+  private dispatchGadgetCollision(
+    gadgetBody: GameBody,
+    other: GameBody,
+    started: boolean,
+    impulse = 0,
+  ): void {
     if (gadgetBody.game.kind !== 'gadget') return;
     const gadget = this.loadedLevel?.gadgets.get(gadgetBody.game.entityId);
     if (!gadget) return;
-    if (started) gadget.onCollisionStart?.(other, this.engine.timeMs);
+    if (started) gadget.onCollisionStart?.(other, this.engine.timeMs, impulse);
     else gadget.onCollisionEnd?.(other, this.engine.timeMs);
   }
 
@@ -620,6 +658,7 @@ export class Game {
       targetsLeft: this.goals.targetsLeft,
       currentCat: cat ? this.catRegistry.get(cat.typeId) : null,
       abilityUsed: cat?.abilityUsed ?? false,
+      isSandbox: this.currentLevel?.sandbox ?? false,
     });
   }
 
@@ -638,6 +677,8 @@ export class Game {
       now,
       fps,
       debug: this.debug,
+      channels: this.channels,
+      levelStartedAt: this.levelStartedAt,
     });
   };
 }

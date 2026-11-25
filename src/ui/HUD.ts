@@ -10,6 +10,7 @@ export interface GameplayHudData {
   targetsLeft: number;
   currentCat: CatDefinition | null;
   abilityUsed: boolean;
+  isSandbox: boolean;
 }
 
 /** DOM is intentionally limited to menus and HUD; the game world stays on Canvas. */
@@ -60,7 +61,7 @@ export class HUD {
     });
   }
 
-  showLevelSelect(levels: LevelData[], progress: GameProgress): void {
+  showLevelSelect(levels: LevelData[], progress: GameProgress, sandbox: LevelData): void {
     this.topbar.hidden = true;
     this.ability.hidden = true;
     this.overlay.className = 'overlay visible';
@@ -82,6 +83,9 @@ export class HUD {
             </button>`;
           }).join('')}
         </div>
+        <button class="secondary-button sandbox-button" data-action="level" data-value="${sandbox.id}">
+          🧪 ${sandbox.name} · все механики
+        </button>
         <p class="controls-note">Мышь / тач — прицел и способность · C — камера · R — рестарт · M — звук · D — дебаг</p>
       </section>
     `;
@@ -100,9 +104,11 @@ export class HUD {
     this.queue.textContent = data.currentCat
       ? `${data.currentCat.shortName} +${data.remainingCats}`
       : 'Котов не осталось';
-    this.objective.textContent = data.targetsLeft > 0
-      ? `Целей: ${data.targetsLeft}`
-      : 'Выполни доставку / стабилизируй сцену';
+    this.objective.textContent = data.isSandbox
+      ? 'Тестовый полигон · D — связи · R — рестарт'
+      : data.targetsLeft > 0
+        ? `Целей: ${data.targetsLeft}`
+        : 'Выполни доставку / стабилизируй сцену';
     this.ability.innerHTML = data.currentCat
       ? `<span class="ability-dot" style="--cat-color:${data.currentCat.color}"></span>
          <div><b>${data.currentCat.abilityName}</b><span>${data.abilityUsed ? 'Способность уже использована' : data.currentCat.abilityHint}</span></div>`

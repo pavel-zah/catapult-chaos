@@ -9,8 +9,8 @@ description: Добавление интерактивного гаджета в
 
 ## Процесс
 
-1. Добавь literal-тип в `GadgetSpawnConfig.type` и при необходимости только нужные декларативные поля.
-2. Создай `src/entities/gadgets/<Name>.ts` с `GadgetFactory`.
+1. Добавь отдельный интерфейс в discriminated union `GadgetSpawnConfig` только с нужными декларативными полями.
+2. Создай `src/entities/gadgets/<Name>.ts` через `defineGadgetFactory`, чтобы сохранить строгий тип конфига.
 3. Каждому Matter-телу задай `kind: 'gadget'`, стабильный `entityId: spawn.id`, бесконечные HP/threshold для неразрушаемого гаджета.
 4. Верни `GadgetInstance`. Связь с другими объектами ищи через `getGadget` в момент события, а не во время создания: порядок spawn может быть любым.
 5. Зарегистрируй фабрику в `gadgets/index.ts` и размести на уровне.

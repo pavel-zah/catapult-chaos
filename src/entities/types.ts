@@ -1,6 +1,7 @@
 import type { Body, Vector } from 'matter-js';
 import type { EventBus } from '../core/EventBus';
 import type { PhysicsWorld } from '../physics/PhysicsWorld';
+import type { ChannelSystem } from '../gameplay/ChannelSystem';
 
 export type EntityKind = 'cat' | 'block' | 'target' | 'treasure' | 'gadget' | 'boundary';
 export type CatEmotion = 'idle' | 'aiming' | 'flying' | 'ability' | 'hit';
@@ -96,14 +97,17 @@ export interface GadgetInstance {
   bodies: GameBody[];
   update?: (dtMs: number, now: number) => void;
   render?: (context: GadgetRenderContext) => void;
-  onCollisionStart?: (other: GameBody, now: number) => void;
+  onCollisionStart?: (other: GameBody, now: number, impulse: number) => void;
   onCollisionEnd?: (other: GameBody, now: number) => void;
+  onLaserHit?: (now: number) => void;
 }
 
 export interface GadgetFactoryContext {
   physics: PhysicsWorld;
   events: EventBus;
+  channels: ChannelSystem;
   getGadget: (id: string) => GadgetInstance | undefined;
+  getBody: (entityId: string) => GameBody | undefined;
 }
 
 export interface ScheduledAction {
