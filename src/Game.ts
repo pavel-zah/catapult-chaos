@@ -1,4 +1,5 @@
 import Matter from 'matter-js';
+import { Analytics } from './core/Analytics';
 import { AudioEngine } from './core/AudioEngine';
 import { Camera } from './core/Camera';
 import { Engine } from './core/Engine';
@@ -39,6 +40,7 @@ import { HUD, type HudAction } from './ui/HUD';
 
 export class Game {
   private readonly events = new EventBus();
+  private readonly analytics = new Analytics();
   private readonly audio = new AudioEngine();
   private readonly camera = new Camera();
   private readonly particles = new ParticleSystem();
@@ -142,11 +144,14 @@ export class Game {
     this.camera.setBounds(level.worldBounds.width, level.worldBounds.height);
     this.state.set('AIMING');
     this.hud.showGameplay(level);
+    if (level.sandbox) this.analytics.abandon('menu');
+    else this.analytics.beginLevel(level.id, this.levelStartedAt);
     this.loadNextCat();
     this.updateHud();
   }
 
   private showLevelSelect(): void {
+    this.analytics.abandon('menu');
     this.state.set('LEVEL_SELECT');
     this.cameraDragging = false;
     this.hud.showLevelSelect(LEVELS, this.progress, SANDBOX_LEVEL);
@@ -352,6 +357,7 @@ export class Game {
     const stars = this.goals.stars(this.score);
     this.state.set('WON');
     this.settling.stop();
+    this.analytics.winLevel(stars, this.score, this.engine.timeMs);
     this.events.emit('audio:play', { sound: 'win' });
     const center = this.currentLevel.slingshot;
     for (let burst = 0; burst < 5; burst += 1) {
@@ -372,6 +378,7 @@ export class Game {
     if (!this.currentLevel || ['LOST', 'WON'].includes(this.state.state)) return;
     this.state.set('LOST');
     this.settling.stop();
+    this.analytics.failLevel(this.goals.hasFailed ? 'treasure_lost' : 'out_of_cats', this.engine.timeMs);
     this.events.emit('audio:play', { sound: 'lose' });
     this.hud.showResult(false, 0, this.score, false, false);
   }
