@@ -36,7 +36,14 @@ export const DEFAULT_BLOCKS: BlockDefinition[] = [
   {
     id: 'tnt', name: 'Динамит', density: 0.002, hp: 24, damageThreshold: 9,
     restitution: 0.1, friction: 0.55, color: '#e64b45', stroke: '#7f1d1d',
-    particleColor: '#fb923c', score: 200, explosive: true,
+    particleColor: '#fb923c', score: 200,
+    explosion: {
+      radius: 235,
+      impulse: 23,
+      baseDamage: 95,
+      minDamage: 25,
+      chainDelaysMs: [80, 100, 120],
+    },
   },
   {
     id: 'static', name: 'Несокрушимая платформа', density: 0.005, hp: Infinity,

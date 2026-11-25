@@ -32,12 +32,16 @@ export const createPortal: GadgetFactory = (spawn, { physics, events, getGadget 
 
       lastTeleport.set(other, now);
       const rotation = exit.angle - body.angle;
-      const normal = { x: Math.cos(exit.angle), y: Math.sin(exit.angle) };
+      const entryNormal = { x: Math.cos(body.angle), y: Math.sin(body.angle) };
+      const exitNormal = { x: Math.cos(exit.angle), y: Math.sin(exit.angle) };
+      const travelSign = Math.sign(Matter.Vector.dot(other.velocity, entryNormal)) || 1;
       const clearance = (other.circleRadius ?? Math.max(other.game.width ?? 30, other.game.height ?? 30) / 2) + 64;
       Matter.Body.setPosition(other, {
-        x: exit.position.x + normal.x * clearance,
-        y: exit.position.y + normal.y * clearance,
+        x: exit.position.x + exitNormal.x * clearance * travelSign,
+        y: exit.position.y + exitNormal.y * clearance * travelSign,
       });
+      // Cap first, then rotate: the second capped call preserves the resulting speed exactly.
+      physics.setVelocityCapped(other, other.velocity);
       const velocity = Matter.Vector.rotate(other.velocity, rotation);
       physics.setVelocityCapped(other, velocity);
       Matter.Body.setAngle(other, other.angle + rotation);

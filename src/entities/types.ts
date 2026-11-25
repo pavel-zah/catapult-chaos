@@ -61,6 +61,14 @@ export interface CatDefinition {
   onAbilityEnd?: (ctx: CatAbilityContext) => void;
 }
 
+export interface ExplosionDefinition {
+  radius: number;
+  impulse: number;
+  baseDamage: number;
+  minDamage: number;
+  chainDelaysMs: readonly number[];
+}
+
 export interface BlockDefinition {
   id: string;
   name: string;
@@ -74,7 +82,7 @@ export interface BlockDefinition {
   particleColor: string;
   score: number;
   isStatic?: boolean;
-  explosive?: boolean;
+  explosion?: ExplosionDefinition;
 }
 
 export interface GadgetRenderContext {

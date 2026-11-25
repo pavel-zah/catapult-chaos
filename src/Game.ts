@@ -11,7 +11,7 @@ import {
   type GameProgress,
   type IStorageAdapter,
 } from './core/StorageAdapter';
-import { JUICE } from './constants';
+import { JUICE, PHYSICS } from './constants';
 import { BlockRegistry } from './entities/BlockRegistry';
 import { CatRegistry } from './entities/CatRegistry';
 import { GadgetRegistry } from './entities/GadgetRegistry';
@@ -21,6 +21,7 @@ import { registerDefaultGadgets } from './entities/gadgets';
 import type {
   CatAbilityContext,
   CatEntity,
+  ExplosionDefinition,
   GameBody,
   ScheduledAction,
 } from './entities/types';
@@ -419,7 +420,7 @@ export class Game {
       }
     }
 
-    if (this.engine.timeMs - this.levelStartedAt < 400 || a.isSensor || b.isSensor) return;
+    if (this.engine.timeMs - this.levelStartedAt < PHYSICS.spawnGraceMs || a.isSensor || b.isSensor) return;
     this.applyImpactDamage(a, impulse);
     this.applyImpactDamage(b, impulse);
   }
@@ -466,10 +467,11 @@ export class Game {
       this.particles.burst(position, definition.particleColor, body.game.typeId === 'tnt' ? 25 : 16, 10, 7);
       this.events.emit('block:destroyed', { body, position, score: definition.score });
       this.events.emit('game:score-popup', { position, text: `+${definition.score}` });
-      if (definition.explosive) {
+      if (definition.explosion) {
+        const explosion = definition.explosion;
         this.explosionSequence += 1;
-        const delay = 80 + (this.explosionSequence % 3) * 20;
-        this.schedule(delay, () => this.detonateTnt(position));
+        const delay = explosion.chainDelaysMs[this.explosionSequence % explosion.chainDelaysMs.length] ?? 100;
+        this.schedule(delay, () => this.detonateTnt(position, explosion));
       } else {
         this.events.emit('audio:play', {
           sound: body.game.typeId === 'glass' ? 'glass' : body.game.typeId === 'stone' ? 'stone' : 'wood',
@@ -493,20 +495,22 @@ export class Game {
     this.updateHud();
   }
 
-  private detonateTnt(position: Matter.Vector): void {
-    const radius = 235;
-    this.events.emit('tnt:exploded', { position, radius });
+  private detonateTnt(position: Matter.Vector, explosion: ExplosionDefinition): void {
+    this.events.emit('tnt:exploded', { position, radius: explosion.radius });
     this.events.emit('audio:play', { sound: 'explosion' });
     this.events.emit('game:score-popup', { position, text: 'BOOM!', color: '#fb923c' });
     this.events.emit('game:hitstop', { durationMs: JUICE.hitstopMs });
     this.camera.shake(20);
     this.particles.burst(position, '#fb923c', 42, 17, 11);
     this.particles.burst(position, '#3f3f46', 22, 9, 13);
-    this.physics.applyRadialImpulse(position, radius, 23);
+    this.physics.applyRadialImpulse(position, explosion.radius, explosion.impulse);
     for (const body of [...this.physics.dynamicBodies]) {
       if (!['block', 'target', 'treasure'].includes(body.game.kind)) continue;
       const distance = Matter.Vector.magnitude(Matter.Vector.sub(body.position, position));
-      if (distance < radius) this.damageBody(body, 95 * (1 - distance / radius) + 25);
+      if (distance < explosion.radius) {
+        const damage = explosion.baseDamage * (1 - distance / explosion.radius) + explosion.minDamage;
+        this.damageBody(body, damage);
+      }
     }
   }
 
