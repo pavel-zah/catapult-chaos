@@ -19,6 +19,9 @@ interface LaserHit {
   distance: number;
 }
 
+/** Matter.Query.ray also exposes the hit body as `collision.body`, which the typings omit. */
+type RayCollision = Matter.Collision & { body?: Matter.Body };
+
 export const createLaser = defineGadgetFactory('laser', (spawn, { physics, events, channels }) => {
   const angle = (spawn.angle ?? 0) * Math.PI / 180;
   const maxLength = spawn.maxLength ?? LASER.maxLength;
@@ -120,7 +123,7 @@ function castLaser(
     return !body.isSensor || (body.game.kind === 'gadget' && body.game.typeId === 'rope');
   });
   const hitBodies = new Set<GameBody>(Matter.Query.ray(candidates, origin, end, LASER.rayWidth)
-    .map((collision) => collision.bodyA as GameBody));
+    .map((collision) => ((collision as RayCollision).body ?? collision.bodyA) as GameBody));
   let nearest: LaserHit | null = null;
   for (const body of hitBodies) {
     for (let index = 0; index < body.vertices.length; index += 1) {

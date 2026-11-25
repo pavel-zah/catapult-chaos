@@ -113,13 +113,14 @@ function resolveCargo(spawn: RopeSpawnConfig, context: GadgetFactoryContext): Ga
 
 function makeRopeBody(spawn: RopeSpawnConfig, cargoPosition: Matter.Vector, length: number): GameBody {
   const middle = Matter.Vector.mult(Matter.Vector.add(spawn.anchor, cargoPosition), 0.5);
-  return attachMetadata(Matter.Bodies.rectangle(middle.x, middle.y, length, ROPE.thickness, {
+  const bodyLength = Math.max(length, ROPE.thickness);
+  return attachMetadata(Matter.Bodies.rectangle(middle.x, middle.y, bodyLength, ROPE.thickness, {
     isStatic: true,
     isSensor: true,
     angle: Matter.Vector.angle(spawn.anchor, cargoPosition),
     label: 'gadget:rope',
   }), {
     entityId: spawn.id, kind: 'gadget', typeId: 'rope', hp: Infinity,
-    maxHp: Infinity, damageThreshold: Infinity, bornAt: 0, width: length, height: ROPE.thickness,
+    maxHp: Infinity, damageThreshold: Infinity, bornAt: 0, width: bodyLength, height: ROPE.thickness,
   });
 }
