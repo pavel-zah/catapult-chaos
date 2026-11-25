@@ -12,13 +12,15 @@ permissions:
 
 concurrency:
   group: pages
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
-  deploy:
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
+  # Сборка и выгрузка артефакта идут отдельным job'ом специально:
+  # deploy-pages ищет артефакт "github-pages" в текущем ране, и если upload
+  # и deploy стоят в одном job'е, поиск может выполниться через 0,2-0,3 с
+  # после финализации артефакта и вернуть пустой список
+  # (actions/deploy-pages#451). Отдельный job гарантирует паузу между шагами.
+  build:
     runs-on: ubuntu-latest
 
     steps:
@@ -44,6 +46,14 @@ jobs:
         with:
           path: ./dist
 
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v5
