@@ -10,7 +10,10 @@ export class PhysicsWorld {
     this.engine = Matter.Engine.create({
       positionIterations: PHYSICS.positionIterations,
       velocityIterations: PHYSICS.velocityIterations,
-      enableSleeping: true,
+      // Sleeping bodies stay frozen in the air when their support disappears (trapdoor, door,
+      // destroyed block). The scene is small, so simulating everything every step is cheaper
+      // than tracking which sleepers lost their support.
+      enableSleeping: false,
     });
     Matter.Events.on(this.engine, 'collisionStart', (event) => {
       for (const pair of event.pairs) {
