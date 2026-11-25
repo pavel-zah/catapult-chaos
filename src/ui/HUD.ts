@@ -1,8 +1,13 @@
 import type { CatDefinition } from '../entities/types';
 import type { LevelData } from '../levels/schema';
+import { isLevelUnlocked } from '../levels';
 import type { GameProgress } from '../core/StorageAdapter';
 
 export type HudAction = 'level' | 'restart' | 'menu' | 'camera' | 'sound' | 'pause' | 'resume' | 'next';
+
+/** Vertical offsets of map nodes to imitate a winding route; repeated for longer campaigns. */
+const MAP_NODE_OFFSETS = [0, 42, 0, 42];
+const STAR_TOTAL = 3;
 
 export interface GameplayHudData {
   score: number;
@@ -71,17 +76,8 @@ export class HUD {
         <p class="eyebrow">ТАКТИЧЕСКАЯ ФИЗИЧЕСКАЯ РОГАТКА</p>
         <h1>CATAPULT <span>CHAOS</span></h1>
         <p class="menu-lead">Коты-хулиганы против порядка. Натягивай, запускай, активируй способность в полёте.</p>
-        <div class="level-grid">
-          ${levels.map((level) => {
-            const result = progress.levels[level.id];
-            const stars = result?.stars ?? 0;
-            return `<button class="level-card" data-action="level" data-value="${level.id}">
-              <span class="level-number">${level.id.replace('level', '').padStart(2, '0')}</span>
-              <strong>${level.name.replace(/^\d+ — /, '')}</strong>
-              <span class="card-stars">${'★'.repeat(stars)}${'☆'.repeat(3 - stars)}</span>
-              <span class="card-record">${result ? `${result.bestScore} очков` : 'Ещё не пройдено'} · ${result?.bonusFish ? '🐟' : '♧'}</span>
-            </button>`;
-          }).join('')}
+        <div class="level-map">
+          ${levels.map((level, index) => this.levelNode(level, index, levels, progress)).join('')}
         </div>
         <button class="secondary-button sandbox-button" data-action="level" data-value="${sandbox.id}">
           🧪 ${sandbox.name} · все механики
@@ -89,6 +85,27 @@ export class HUD {
         <p class="controls-note">Мышь / тач — прицел и способность · C — камера · R — рестарт · M — звук · D — дебаг</p>
       </section>
     `;
+  }
+
+  private levelNode(level: LevelData, index: number, levels: LevelData[], progress: GameProgress): string {
+    const result = progress.levels[level.id];
+    const stars = result?.stars ?? 0;
+    const unlocked = isLevelUnlocked(levels, progress, level.id);
+    const offset = MAP_NODE_OFFSETS[index % MAP_NODE_OFFSETS.length];
+    const number = level.id.replace('level', '').padStart(2, '0');
+    const title = unlocked
+      ? `${level.name}${result ? ` · ${result.bestScore} очков` : ''}`
+      : 'Сначала собери хотя бы одну звезду на предыдущем уровне';
+    return `<div class="map-node ${unlocked ? '' : 'locked'}" style="--dy:${offset}px">
+      <button class="map-circle" data-action="level" data-value="${level.id}"
+        ${unlocked ? '' : 'disabled'}
+        title="${title}" aria-label="${unlocked ? `Уровень ${number}` : `Уровень ${number} закрыт`}">
+        <span class="map-number">${number}</span>
+        ${unlocked ? '' : '<span class="map-lock" aria-hidden="true">🔒</span>'}
+      </button>
+      <span class="map-stars" aria-label="Звёзды: ${stars} из ${STAR_TOTAL}">${'★'.repeat(stars)}${'☆'.repeat(STAR_TOTAL - stars)}</span>
+      <span class="map-name">${level.name.replace(/^\d+ — /, '')}${result?.bonusFish ? ' 🐟' : ''}</span>
+    </div>`;
   }
 
   showGameplay(level: LevelData): void {
@@ -132,7 +149,7 @@ export class HUD {
       <section class="menu-card compact-card result-card ${won ? 'won' : 'lost'}">
         <p class="eyebrow">${won ? 'ИДЕАЛЬНЫЙ БЕСПОРЯДОК' : 'КОТЫ НЕ СДАЮТСЯ'}</p>
         <h2>${won ? 'Уровень пройден!' : 'Попробуем иначе?'}</h2>
-        ${won ? `<div class="result-stars">${'★'.repeat(stars)}${'☆'.repeat(3 - stars)}</div>` : '<div class="result-cat">×﹏×</div>'}
+        ${won ? `<div class="result-stars">${'★'.repeat(stars)}${'☆'.repeat(STAR_TOTAL - stars)}</div>` : '<div class="result-cat">×﹏×</div>'}
         <div class="result-score">${score.toLocaleString('ru-RU')} <small>очков</small></div>
         ${won ? `<div class="fish-result ${fish ? 'collected' : ''}">${fish ? '🐟 Золотая рыбка собрана!' : '♧ Золотая рыбка осталась на уровне'}</div>` : ''}
         ${won && hasNext ? '<button class="primary-button" data-action="next">Следующий уровень</button>' : ''}

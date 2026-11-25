@@ -30,7 +30,7 @@ import { GameStateMachine } from './gameplay/GameStateMachine';
 import { GoalTracker } from './gameplay/GoalTracker';
 import { Slingshot } from './gameplay/Slingshot';
 import { LevelLoader, createCatBody, type LoadedLevel } from './levels/LevelLoader';
-import { LEVELS, SANDBOX_LEVEL, getLevel, getNextLevel } from './levels';
+import { LEVELS, SANDBOX_LEVEL, getLevel, getNextLevel, isLevelUnlocked } from './levels';
 import type { LevelData } from './levels/schema';
 import { PhysicsWorld } from './physics/PhysicsWorld';
 import { SettlingDetector } from './physics/SettlingDetector';
@@ -121,6 +121,7 @@ export class Game {
   private startLevel(id: string): void {
     const level = getLevel(id);
     if (!level) return;
+    if (level !== SANDBOX_LEVEL && !isLevelUnlocked(LEVELS, this.progress, level.id)) return;
     this.currentLevel = level;
     this.levelStartedAt = this.engine.timeMs;
     this.catQueue = [...level.queue];
