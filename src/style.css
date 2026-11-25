@@ -162,19 +162,19 @@ h2 { margin: 8px 0 14px; font-size: clamp(29px, 4vw, 42px); }
   place-items: center;
   width: 30px;
   height: 30px;
-  border: 2px solid #64748b;
+  border: 2px solid #cbd5e1;
   border-radius: 50%;
-  background: #1b2b47;
+  background: #f8fafc;
   font-size: 13px;
 }
-.map-stars { color: #facc15; font-size: 17px; line-height: 1; letter-spacing: 3px; text-shadow: 0 2px 8px #facc1544; }
-.map-name { color: #c0cbdb; font-size: 12px; font-weight: 700; line-height: 1.25; text-align: center; }
-.map-node.locked { opacity: .62; }
-.map-node.locked .map-circle { border-color: #64748b80; border-style: dashed; color: #7c8aa0; background: #1b2637; box-shadow: none; cursor: not-allowed; }
-.map-node.locked .map-circle:hover { transform: none; box-shadow: none; }
-.map-node.locked .map-number { opacity: .7; }
-.map-node.locked .map-stars { color: #475569; text-shadow: none; }
-.map-node.locked .map-name { color: #64748b; }
+.map-stars { color: #f59e0b; font-size: 17px; line-height: 1; letter-spacing: 3px; text-shadow: 0 2px 8px #f59e0b33; }
+.map-name { color: #475569; font-size: 12px; font-weight: 700; line-height: 1.25; text-align: center; }
+.map-node.locked { opacity: .75; }
+.map-node.locked .map-circle { border-color: #94a3b880; border-style: dashed; color: #94a3b8; background: #e2e8f0; box-shadow: none; cursor: not-allowed; }
+.map-node.locked .map-circle:hover { transform: none; filter: none; box-shadow: none; }
+.map-node.locked .map-number { opacity: .8; text-shadow: none; }
+.map-node.locked .map-stars { color: #cbd5e1; text-shadow: none; }
+.map-node.locked .map-name { color: #94a3b8; }
 .compact-card { width: min(440px, 100%); padding: 34px; }
 .primary-button, .secondary-button, .text-button {
   display: block;
@@ -184,18 +184,24 @@ h2 { margin: 8px 0 14px; font-size: clamp(29px, 4vw, 42px); }
   border-radius: 13px;
   font-weight: 800;
   cursor: pointer;
+  transition: transform 120ms, background 120ms, box-shadow 120ms;
 }
-.primary-button { border: 0; color: #29200c; background: #facc15; box-shadow: 0 5px 0 #a16207; }
-.primary-button:hover { background: #fde047; }
-.secondary-button { border: 1px solid #ffffff26; color: #f8fafc; background: #ffffff0b; }
-.sandbox-button { max-width: 420px; margin: 18px auto 0; border-color: #67e8f955; color: #a5f3fc; }
-.text-button { border: 0; color: #94a3b8; background: transparent; }
-.result-stars { color: #facc15; font-size: 54px; letter-spacing: 7px; text-shadow: 0 5px 20px #facc1544; }
-.result-cat { color: #fda4af; font-size: 50px; font-weight: 900; }
-.result-score { margin: 10px 0; color: #fde68a; font-size: 31px; font-weight: 900; }
-.result-score small { color: #94a3b8; font-size: 13px; }
-.fish-result { margin: 15px 0; padding: 9px; border-radius: 10px; color: #94a3b8; background: #ffffff08; font-size: 13px; }
-.fish-result.collected { color: #fde047; }
+.primary-button { border: 0; color: #ffffff; background: linear-gradient(180deg, #fb923c, #f97316); box-shadow: 0 5px 0 #c2410c; }
+.primary-button:hover { background: linear-gradient(180deg, #fdba74, #fb923c); }
+.primary-button:active { transform: translateY(2px); box-shadow: 0 3px 0 #c2410c; }
+.secondary-button { border: 1px solid #cbd5e1; color: #1e293b; background: #ffffff; box-shadow: 0 2px 0 #e2e8f0; }
+.secondary-button:hover { background: #f1f5f9; border-color: #94a3b8; }
+.secondary-button:active { transform: translateY(1px); box-shadow: 0 1px 0 #e2e8f0; }
+.sandbox-button { max-width: 420px; margin: 18px auto 0; border-color: #67e8f9; color: #0e7490; background: #ecfeff; }
+.sandbox-button:hover { background: #cffafe; border-color: #22d3ee; }
+.text-button { border: 0; color: #64748b; background: transparent; }
+.text-button:hover { color: #0f172a; background: #f1f5f9; }
+.result-stars { color: #f59e0b; font-size: 54px; letter-spacing: 7px; text-shadow: 0 5px 20px #f59e0b40; }
+.result-cat { color: #e11d48; font-size: 50px; font-weight: 900; }
+.result-score { margin: 10px 0; color: #b45309; font-size: 31px; font-weight: 900; }
+.result-score small { color: #64748b; font-size: 13px; }
+.fish-result { margin: 15px 0; padding: 9px; border-radius: 10px; color: #64748b; background: #f1f5f9; font-size: 13px; }
+.fish-result.collected { color: #b45309; background: #fef3c7; }
 
 @media (max-width: 760px) {
   .topbar { inset-inline: 7px; gap: 5px; }
