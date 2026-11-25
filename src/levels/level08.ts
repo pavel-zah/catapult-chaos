@@ -16,7 +16,6 @@ export const level08: LevelData = {
     { id: 'floor', type: 'static', x: 960, y: 1020, width: 1920, height: 80 },
     { id: 'start-shelf', type: 'static', x: 1080, y: 982, width: 300, height: 22 },
     { id: 'crate', type: 'wood', x: 1520, y: 930, width: 90, height: 90 },
-    { id: 'glass-support', type: 'glass', x: 1650, y: 886, width: 30, height: 188 },
   ],
   targets: [
     { id: 'treasure-8', type: 'treasure_box', x: 1080, y: 931, width: 96, height: 78 },

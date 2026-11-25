@@ -11,7 +11,6 @@ export const level07: LevelData = {
   goals: [{ type: 'destroy_targets' }, { type: 'bonus_fish', gadgetId: 'fish-7' }],
   blocks: [
     { id: 'floor', type: 'static', x: 960, y: 1020, width: 1920, height: 80 },
-    { id: 'glass-screen', type: 'glass', x: 1520, y: 900, width: 26, height: 160 },
     { id: 'tnt-zero', type: 'tnt', x: 950, y: 450, width: 72, height: 72 },
   ],
   targets: [

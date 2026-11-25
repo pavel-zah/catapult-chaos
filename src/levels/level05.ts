@@ -11,12 +11,10 @@ export const level05: LevelData = {
   goals: [{ type: 'destroy_targets' }, { type: 'bonus_fish', gadgetId: 'fish-5' }],
   blocks: [
     { id: 'floor', type: 'static', x: 960, y: 1020, width: 1920, height: 80 },
-    { id: 'glass-guard', type: 'glass', x: 1340, y: 900, width: 26, height: 160 },
-    { id: 'wood-post', type: 'wood', x: 1600, y: 886, width: 34, height: 188 },
   ],
   targets: [
     { id: 'vacuum-on-hatch', type: 'vacuum', x: 1150, y: 649 },
-    { id: 'vacuum-behind-glass', type: 'vacuum', x: 1410, y: 942 },
+    { id: 'vacuum-middle', type: 'vacuum', x: 1400, y: 942 },
     { id: 'vacuum-far-right', type: 'vacuum', x: 1850, y: 942 },
   ],
   gadgets: [
