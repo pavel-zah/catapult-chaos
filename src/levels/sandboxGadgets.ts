@@ -6,7 +6,7 @@ export const sandboxGadgets: LevelData = {
   name: 'Песочница гаджетов',
   description: 'Все каналы и физические механики. D показывает связи, R перезапускает сцену.',
   worldBounds: { width: 2720, height: 1200 },
-  slingshot: { x: 240, y: 980 },
+  slingshot: { x: 240, y: 920 },
   queue: [
     'classic', 'anvil', 'bouncy', 'splitter', 'magnet', 'classic',
     'anvil', 'classic', 'bouncy', 'splitter', 'magnet', 'classic',
