@@ -2,28 +2,35 @@ import type { LevelData } from './schema';
 
 export const level04: LevelData = {
   id: 'level04',
-  name: '4 — Операция «Сейф»',
-  description: 'Доставь сейф в зелёную зону и не разбей его. Магнит решает, батут помогает.',
+  name: '4 — Засов на кнопке',
+  description: 'Кнопка на полу поднимает тяжёлый засов. Сначала нажми, потом бей по крепости.',
   worldBounds: { width: 1920, height: 1080 },
   slingshot: { x: 220, y: 825 },
-  queue: ['magnet', 'classic', 'bouncy', 'magnet'],
-  starThresholds: { twoStars: 1400, threeStars: 2300 },
-  goals: [
-    { type: 'deliver_to_zone', targetId: 'treasure-4', zoneId: 'goal-4' },
-    { type: 'bonus_fish', gadgetId: 'fish-4' },
-  ],
+  queue: ['classic', 'bouncy', 'anvil', 'classic'],
+  starThresholds: { twoStars: 1800, threeStars: 2600 },
+  goals: [{ type: 'destroy_targets' }, { type: 'bonus_fish', gadgetId: 'fish-4' }],
   blocks: [
     { id: 'floor', type: 'static', x: 960, y: 1020, width: 1920, height: 80 },
-    { id: 'start-shelf', type: 'static', x: 1190, y: 982, width: 300, height: 22 },
-    { id: 'glass-bumper', type: 'glass', x: 1430, y: 900, width: 24, height: 130, angle: -18 },
-    { id: 'soft-crate', type: 'wood', x: 1770, y: 932, width: 90, height: 96 },
+    { id: 'fort-leg-l', type: 'wood', x: 1310, y: 886, width: 36, height: 188 },
+    { id: 'fort-leg-r', type: 'glass', x: 1540, y: 886, width: 30, height: 188 },
+    { id: 'fort-roof', type: 'wood', x: 1425, y: 778, width: 280, height: 30 },
+    { id: 'shelf', type: 'static', x: 1720, y: 838, width: 220, height: 26 },
+    { id: 'crate', type: 'wood', x: 1610, y: 944, width: 82, height: 72 },
   ],
   targets: [
-    { id: 'treasure-4', type: 'treasure_box', x: 1190, y: 922, width: 96, height: 78 },
+    { id: 'vacuum-inner', type: 'vacuum', x: 1425, y: 942 },
+    { id: 'vacuum-roof', type: 'vacuum', x: 1425, y: 725 },
+    { id: 'vacuum-shelf', type: 'vacuum', x: 1720, y: 787 },
   ],
   gadgets: [
-    { id: 'trampoline-4', type: 'trampoline', x: 1480, y: 956, width: 180, angle: 20 },
-    { id: 'goal-4', type: 'goal_zone', targetId: 'treasure-4', x: 1660, y: 922, width: 250, height: 116 },
-    { id: 'fish-4', type: 'bonus_fish', x: 1510, y: 650, radius: 31 },
+    {
+      id: 'button-gate', type: 'button', x: 760, y: 959, channelId: 'gate',
+      mode: 'once', impulseThreshold: 18,
+    },
+    {
+      id: 'door-gate', type: 'door', x: 1120, y: 800, width: 42, height: 360,
+      channelId: 'gate', openOffset: { x: 0, y: -410 }, moveSpeed: 10,
+    },
+    { id: 'fish-4', type: 'bonus_fish', x: 1720, y: 500, radius: 31 },
   ],
 };
