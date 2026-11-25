@@ -1,5 +1,16 @@
 import type { CatDefinition } from '../types';
 
+const BOUNCY = {
+  restitution: 0.56,
+  frictionAir: 0.008,
+  superRestitution: 0.97,
+  superFrictionAir: 0.003,
+  superDurationMs: 1200,
+  boostFactor: 1.35,
+  boostKick: 5,
+  boostLift: 4,
+} as const;
+
 export const bouncyCat: CatDefinition = {
   id: 'bouncy',
   name: 'Кот-Попрыгун',
@@ -11,16 +22,21 @@ export const bouncyCat: CatDefinition = {
   accent: '#087f70',
   radius: 33,
   mass: 11,
-  restitution: 0.56,
+  restitution: BOUNCY.restitution,
   friction: 0.25,
   allowAbilityAfterCollision: true,
-  onAbilityActivate: ({ cat, physics }) => {
-    cat.body.restitution = 0.97;
-    cat.body.frictionAir = 0.003;
+  onAbilityActivate: ({ cat, physics, setAbilityDuration }) => {
+    setAbilityDuration(BOUNCY.superDurationMs);
+    cat.body.restitution = BOUNCY.superRestitution;
+    cat.body.frictionAir = BOUNCY.superFrictionAir;
     const velocity = cat.body.velocity;
     physics.setVelocityCapped(cat.body, {
-      x: velocity.x * 1.35 + Math.sign(velocity.x || 1) * 5,
-      y: velocity.y * 1.35 - 4,
+      x: velocity.x * BOUNCY.boostFactor + Math.sign(velocity.x || 1) * BOUNCY.boostKick,
+      y: velocity.y * BOUNCY.boostFactor - BOUNCY.boostLift,
     });
+  },
+  onAbilityEnd: ({ cat }) => {
+    cat.body.restitution = BOUNCY.restitution;
+    cat.body.frictionAir = BOUNCY.frictionAir;
   },
 };
