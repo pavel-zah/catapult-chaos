@@ -20,7 +20,6 @@ export const sandboxGadgets: LevelData = {
     { id: 'laser-crate', type: 'wood', x: 2450, y: 300, width: 76, height: 76 },
     { id: 'crate-shelf', type: 'static', x: 2450, y: 350, width: 200, height: 24 },
     { id: 'vacuum-shelf', type: 'static', x: 2100, y: 350, width: 150, height: 24 },
-    { id: 'gravity-stone', type: 'stone', x: 1750, y: 950, width: 56, height: 56 },
   ],
   targets: [
     { id: 'sandbox-trapdoor-safe', type: 'treasure_box', x: 1300, y: 750, width: 86, height: 68 },
